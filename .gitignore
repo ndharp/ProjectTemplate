@@ -1,0 +1,2 @@
+# TEMPLATE: add this project's language and engine ignores.
+# .claude/settings.local.json is covered by the global git excludes file.
