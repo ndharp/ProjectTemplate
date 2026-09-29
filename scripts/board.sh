@@ -20,15 +20,27 @@ owner=$(sed -E 's|.*/users/([^/]+)/projects/.*|\1|' <<<"$url")
 num="${url##*/}"
 issue_url="https://github.com/$repo/issues/$issue"
 
+# Reads the card id from the issue side, which costs a few GraphQL nodes;
+# listing the whole board burns through the API's node budget
 find_item() {
-  gh project item-list "$num" --owner "$owner" --limit 500 --format json \
-    --jq ".items[] | select(.content.url == \"$issue_url\") | .id" | head -1
+  # shellcheck disable=SC2016  # $o, $r and $n are GraphQL variables, not shell
+  gh api graphql -f o="${repo%%/*}" -f r="${repo##*/}" -F n="$issue" -f query='
+    query($o: String!, $r: String!, $n: Int!) {
+      repository(owner: $o, name: $r) {
+        issue(number: $n) { projectItems(first: 10) { nodes { id project { number } } } }
+      }
+    }' --jq ".data.repository.issue.projectItems.nodes[] | select(.project.number == $num) | .id" | head -1
 }
 
 item_id=$(find_item)
 if [ -z "$item_id" ]; then
   gh project item-add "$num" --owner "$owner" --url "$issue_url" >/dev/null
-  item_id=$(find_item)
+  # The added card takes a moment to appear in item-list
+  for _ in 1 2 3 4 5; do
+    item_id=$(find_item)
+    [ -n "$item_id" ] && break
+    sleep 2
+  done
 fi
 [ -n "$item_id" ] || { echo "Issue #$issue has no card on project $num"; exit 1; }
 
