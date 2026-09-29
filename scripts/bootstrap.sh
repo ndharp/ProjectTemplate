@@ -165,7 +165,9 @@ ensure_field "Target date" "DATE"
 
 # Status is a built-in field that field-create cannot touch, so its options go
 # through GraphQL. Existing option ids are passed back where the names match,
-# which keeps those cards' statuses.
+# which keeps those cards' statuses. GitHub's default Todo and In Progress
+# options are absorbed into Backlog and In progress the same way, so a board
+# still on the defaults migrates with every card's status intact.
 status_id=$(gh project field-list "$num" --owner "$owner" --format json \
   --jq '.fields[] | select(.name == "Status") | .id')
 
@@ -175,7 +177,7 @@ existing=$(gh api graphql -f id="$status_id" -f query='
     node(id: $id) { ... on ProjectV2SingleSelectField { options { id name } } }
   }' --jq '.data.node.options[] | [.id, .name] | @tsv')
 
-wanted=("Backlog|GRAY" "Ready|BLUE" "In progress|YELLOW" "In review|PURPLE" "Done|GREEN")
+wanted=("Backlog|GRAY|Todo" "Ready|BLUE|" "In progress|YELLOW|In Progress" "In review|PURPLE|" "Done|GREEN|")
 
 if [ "$(cut -f2 <<<"$existing")" = $'Backlog\nReady\nIn progress\nIn review\nDone' ]; then
   skip "Status options are canonical"
@@ -183,13 +185,18 @@ else
   while IFS=$'\t' read -r _ oname; do
     case "$oname" in
       Backlog|Ready|"In progress"|"In review"|Done) ;;
+      Todo) say "  > absorbing 'Todo' into 'Backlog'" ;;
+      "In Progress") say "  > absorbing 'In Progress' into 'In progress'" ;;
       *) say "  ! Status option '$oname' is dropped; its items will read 'No status'" ;;
     esac
   done <<<"$existing"
   opts=""
   for w in "${wanted[@]}"; do
-    IFS='|' read -r oname ocolor <<<"$w"
+    IFS='|' read -r oname ocolor legacy <<<"$w"
     oid=$(awk -F'\t' -v n="$oname" '$2 == n {print $1}' <<<"$existing" | head -1)
+    if [ -z "$oid" ] && [ -n "$legacy" ]; then
+      oid=$(awk -F'\t' -v n="$legacy" '$2 == n {print $1}' <<<"$existing" | head -1)
+    fi
     if [ -n "$oid" ]; then
       opts+="{id: \"$oid\", name: \"$oname\", color: $ocolor, description: \"\"},"
     else
