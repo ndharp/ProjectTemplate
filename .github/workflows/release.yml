@@ -1,0 +1,72 @@
+# Builds and drafts a GitHub release when a version tag is pushed. A
+# dispatched run builds and uploads the archives as build artifacts and stops
+# there, so packaging can be exercised without cutting a release.
+name: release
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+# Read-only by default; the job that publishes asks for more
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build artifacts
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+      # TEMPLATE: replace this step with the project's build and package
+      # commands. RustyChess and Tribe release.yml are filled-in models.
+      - name: Package
+        run: |
+          set -euo pipefail
+          mkdir -p out
+          tar -czf "out/${GITHUB_REPOSITORY##*/}-${GITHUB_REF_NAME}.tar.gz" \
+            README.md CHANGELOG.md LICENSE
+      - uses: actions/upload-artifact@v4
+        with:
+          name: archives
+          path: out/*
+          if-no-files-found: error
+
+  publish:
+    name: Draft the release
+    needs: build
+    if: github.ref_type == 'tag'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      # The one job that writes, and only on a tag
+      contents: write
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/download-artifact@v4
+        with:
+          path: archives
+          merge-multiple: true
+      # Created as a draft: what is in it should be looked at before anyone
+      # downloads it, and a tag pushed by mistake is then not a release anyone
+      # saw. The notes are the tagged version's CHANGELOG section; the
+      # generated list is the fallback when that section is missing.
+      - name: Draft the release with the changelog section as notes
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          version="${GITHUB_REF_NAME#v}"
+          awk -v ver="$version" '
+            $0 ~ "^## \\[" ver "\\]" { on = 1; next }
+            /^## \[/ { on = 0 }
+            on { print }
+          ' CHANGELOG.md > notes.md
+          if [ -s notes.md ]; then
+            gh release create "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" \
+              --draft --title "$GITHUB_REF_NAME" --notes-file notes.md archives/*
+          else
+            gh release create "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" \
+              --draft --title "$GITHUB_REF_NAME" --generate-notes archives/*
+          fi

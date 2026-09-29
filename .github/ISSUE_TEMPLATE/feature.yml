@@ -1,0 +1,24 @@
+name: Feature
+description: New behaviour.
+title: "scope: "
+labels: ["type:feature"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Replace `scope` in the title with the part you are changing. Add one
+        `area:` label after filing.
+  - type: textarea
+    id: what
+    attributes:
+      label: What and why
+      description: What should change, and what it unblocks or fixes.
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance
+      description: How someone can tell this is done.
+    validations:
+      required: true

@@ -1,0 +1,25 @@
+name: Epic
+description: An outcome that needs more than one pull request.
+title: "epic: "
+labels: ["epic"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        After filing, add the dominant `type:` of the children and one `area:`
+        label. Create each slice as its own issue and attach it as a sub-issue;
+        AGENTS.md has the command.
+  - type: textarea
+    id: outcome
+    attributes:
+      label: Outcome
+      description: What is true when this closes.
+    validations:
+      required: true
+  - type: textarea
+    id: slices
+    attributes:
+      label: Slices
+      description: The first sub-issues, one per line.
+    validations:
+      required: true

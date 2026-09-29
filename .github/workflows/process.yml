@@ -1,0 +1,119 @@
+# Enforces the process rules that can block a merge: pull request shape,
+# commit subject style, the one-type-one-area label rule on the closed issue,
+# and the ADR index. Issue-time rules live in AGENTS.md instead, because a
+# failed run on an issue event surfaces nowhere useful.
+name: process
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    # edited is included so fixing the title or body reruns the check
+    types: [opened, edited, reopened, synchronize]
+  workflow_dispatch:
+
+concurrency:
+  group: process-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  pull-requests: read
+  issues: read
+
+jobs:
+  pr-shape:
+    name: PR shape
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      # The title and body are untrusted input on a public repo, so they reach
+      # the shell through the environment, never through template expansion
+      # inside the script.
+      - name: Title, closing reference, issue labels
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TITLE: ${{ github.event.pull_request.title }}
+          BODY: ${{ github.event.pull_request.body }}
+          HEAD_REF: ${{ github.head_ref }}
+          ACTOR: ${{ github.event.pull_request.user.login }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          fail=0
+          if ! grep -qE '^[a-z0-9][a-z0-9 ./-]*: .+' <<<"$TITLE"; then
+            echo "::error::PR title must be 'scope: what was done', got '$TITLE'"
+            fail=1
+          fi
+          # A milestone rollup closes no single issue, and dependabot writes
+          # its own titles
+          if [[ "$HEAD_REF" =~ ^m[0-9]+- || "$ACTOR" == "dependabot[bot]" ]]; then
+            exit "$fail"
+          fi
+          num=$(grep -oiE '(fix(es)?|closes) #[0-9]+' <<<"$TITLE $BODY" \
+            | head -1 | grep -oE '[0-9]+' || true)
+          if [ -z "$num" ]; then
+            echo "::error::The title or body must contain 'fix #NN' naming the issue this closes"
+            exit 1
+          fi
+          labels=$(gh api "repos/$REPO/issues/$num" --jq '.labels[].name') \
+            || { echo "::error::Issue #$num does not exist"; exit 1; }
+          types=$(grep -c '^type:' <<<"$labels" || true)
+          areas=$(grep -c '^area:' <<<"$labels" || true)
+          if [ "$types" -ne 1 ] || [ "$areas" -ne 1 ]; then
+            echo "::error::Issue #$num carries $types 'type:' and $areas 'area:' labels; it needs exactly one of each"
+            fail=1
+          fi
+          exit "$fail"
+
+  commit-style:
+    name: Commit style
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: "Subjects are 'scope: what was done' and at most 72 characters"
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          PR: ${{ github.event.pull_request.number }}
+        run: |
+          set -euo pipefail
+          fail=0
+          while IFS=$'\t' read -r sha subject author; do
+            case "$subject" in "Merge "*) continue ;; esac
+            [ "$author" = "dependabot[bot]" ] && continue
+            if ! grep -qE '^[a-z0-9][^:]*: .+' <<<"$subject"; then
+              echo "::error::Commit $sha subject must be 'scope: what was done', got '$subject'"
+              fail=1
+            fi
+            if [ "${#subject}" -gt 72 ]; then
+              echo "::error::Commit $sha subject is over 72 characters"
+              fail=1
+            fi
+          done < <(gh api "repos/$REPO/pulls/$PR/commits" --paginate \
+            --jq '.[] | [.sha[0:7], (.commit.message | split("\n")[0]), .commit.author.name] | @tsv')
+          exit "$fail"
+
+  adr-index:
+    name: ADR index
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7
+      - name: Every ADR is listed in docs/adr/README.md
+        run: |
+          set -euo pipefail
+          # Passes trivially before the first ADR exists
+          [ -d docs/adr ] || exit 0
+          shopt -s nullglob
+          fail=0
+          for adr in docs/adr/[0-9]*.md; do
+            name=$(basename "$adr")
+            if ! grep -qF -- "$name" docs/adr/README.md; then
+              echo "::error::$name is missing from docs/adr/README.md"
+              fail=1
+            fi
+          done
+          exit "$fail"

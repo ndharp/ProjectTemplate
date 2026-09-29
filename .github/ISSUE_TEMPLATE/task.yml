@@ -1,0 +1,35 @@
+name: Task
+description: A chore, refactor, doc change, performance pass or test work.
+title: "scope: "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Replace `scope` in the title with the part you are changing. After
+        filing, apply the `type:` label matching the dropdown and one `area:`
+        label.
+  - type: dropdown
+    id: type
+    attributes:
+      label: Type
+      options:
+        - "chore: maintenance"
+        - "refactor: restructuring without behaviour change"
+        - "docs: documentation"
+        - "perf: performance work"
+        - "test: test coverage"
+    validations:
+      required: true
+  - type: textarea
+    id: goal
+    attributes:
+      label: Goal
+    validations:
+      required: true
+  - type: textarea
+    id: done
+    attributes:
+      label: Done when
+      description: A checklist someone else can verify.
+      value: |
+        - [ ]

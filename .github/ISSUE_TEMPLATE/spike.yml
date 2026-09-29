@@ -1,0 +1,24 @@
+name: Spike
+description: A timeboxed investigation.
+title: "spike: "
+labels: ["type:spike"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        The Estimate on the board is the timebox. The output is a comment with
+        the answer, plus a decision issue or follow-up issues. The spike branch
+        is throwaway. Add one `area:` label after filing.
+  - type: textarea
+    id: question
+    attributes:
+      label: The question
+    validations:
+      required: true
+  - type: textarea
+    id: answer
+    attributes:
+      label: What would answer it
+      description: The capture, number or working sample that settles it.
+    validations:
+      required: true

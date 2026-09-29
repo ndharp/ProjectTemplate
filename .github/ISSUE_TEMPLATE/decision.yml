@@ -1,0 +1,28 @@
+name: Decision
+description: A question only the director can answer.
+labels: ["decision"]
+assignees: ["ndharp"]
+body:
+  - type: textarea
+    id: question
+    attributes:
+      label: The question
+    validations:
+      required: true
+  - type: textarea
+    id: options
+    attributes:
+      label: Options
+      value: |
+        *
+    validations:
+      required: true
+  - type: textarea
+    id: recommendation
+    attributes:
+      label: Recommendation
+  - type: input
+    id: needed-by
+    attributes:
+      label: Needed by
+      description: The milestone that is blocked without an answer.

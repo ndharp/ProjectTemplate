@@ -1,0 +1,30 @@
+# The project's checks. This file carries the house patterns; the steps are
+# the project's own.
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  checks:
+    name: Checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+      # TEMPLATE: replace this step with the project's build, lint and tests.
+      # RustyChess and Tribe ci.yml are filled-in models. A job on a
+      # self-hosted runner must keep fork pull requests off it.
+      - name: Placeholder
+        run: |
+          echo "TEMPLATE: replace this step with the project's checks"

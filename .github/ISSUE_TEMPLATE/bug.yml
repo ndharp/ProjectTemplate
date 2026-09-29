@@ -1,0 +1,29 @@
+name: Bug report
+description: Something behaves incorrectly.
+title: "bug: "
+labels: ["type:bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Title the issue after the symptom, not the fix. Add one `area:` label
+        once it is clear which part is at fault.
+  - type: textarea
+    id: symptom
+    attributes:
+      label: What happens
+      description: The behaviour you saw, and the behaviour you expected.
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: How to reproduce
+      description: The shortest sequence that shows it. A failing test works too.
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Evidence
+      description: Log output, a backtrace, or the `file:line` you suspect.
