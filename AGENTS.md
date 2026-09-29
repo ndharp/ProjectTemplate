@@ -111,7 +111,7 @@ A release makes sense when a milestone closes, or when a `prio:p0` fix is worth 
 
 Cutting one:
 
-1. A release pull request moves `[Unreleased]` to `[X.Y.Z] - YYYY-MM-DD` in the CHANGELOG and bumps the project's own version. TEMPLATE: say where the version lives in this project.
+1. File a release issue: `release: cut X.Y.Z`, labels `type:chore` and `area:build`. The release pull request closes it, moves `[Unreleased]` to `[X.Y.Z] - YYYY-MM-DD` in the CHANGELOG and bumps the project's own version. TEMPLATE: say where the version lives in this project.
 2. After it merges, tag main: `git tag vX.Y.Z && git push origin vX.Y.Z`.
 3. The release workflow builds the artifacts and drafts a GitHub release with the CHANGELOG section as notes.
 4. Nate reviews the draft and publishes it.
