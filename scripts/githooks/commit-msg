@@ -1,0 +1,17 @@
+#!/usr/bin/env sh
+# Rejects a commit whose subject would fail the process CI: the subject is
+# 'scope: what was done' and at most 72 characters.
+# Enable once per clone: git config core.hooksPath scripts/githooks
+
+subject=$(head -n 1 "$1")
+case "$subject" in
+  "Merge "*) exit 0 ;;
+esac
+if ! printf '%s' "$subject" | grep -qE '^[a-z0-9][^:]*: .+'; then
+  echo "commit-msg: subject must be 'scope: what was done', got: $subject" >&2
+  exit 1
+fi
+if [ "${#subject}" -gt 72 ]; then
+  echo "commit-msg: subject is ${#subject} characters; the limit is 72" >&2
+  exit 1
+fi
