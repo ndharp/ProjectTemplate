@@ -13,7 +13,7 @@ Each project grew its own process. One repo has the best board, another the stri
 * Estimates are Fibonacci points (1, 2, 3, 5, 8, 13) in the board's Estimate field. 13 means split it.
 * Milestones are the planning horizon, each with a due date and a target version.
 * One branch per issue (`i38-ui-polish`), one pull request per issue, `fix #NN` closes it on merge.
-* Commits are `scope: what was done (fix #NN)`, subject line only by default.
+* Commits are `scope: what was done`, subject line only by default, at most 72 characters.
 * Questions for the director are `decision` issues. Decisions worth keeping become ADRs.
 * A milestone closing cuts a release: tag `vX.Y.Z` and the release workflow drafts it from the CHANGELOG.
 

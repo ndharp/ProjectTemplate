@@ -60,7 +60,8 @@ Estimate at triage. Re-estimate freely until work starts, never after.
 * One branch per issue, named `i<issue>-<slug>`: `i38-ui-polish`.
 * Milestone work branches from the open milestone branch (`m4-game-completion`) when one exists, otherwise from `main`. The milestone branch rolls up to `main` in one pull request.
 * Never commit to `main` directly.
-* Commits: `scope: what was done (fix #NN)`. Subject line only by default. A body, when needed, is a bullet list of `- path: what changed`.
+* Commits: `scope: what was done`. Subject line only by default. A body, when needed, is a bullet list of `- path: what changed`. The pull request's `fix #NN` closes the issue; the subject does not need one.
+* A subject fits 72 characters. `git config core.hooksPath scripts/githooks` turns on the commit-msg hook that enforces it before CI does.
 * One pull request per issue, one issue closed per pull request, `fix #NN` in the body.
 * Fill every section of the pull request template. Verification lists what was actually run.
 
